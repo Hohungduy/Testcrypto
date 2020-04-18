@@ -1,5 +1,4 @@
 EXTRA_CFLAGS += -02
 
-crypto-hw-mycrypto-objs := mycrypto.o \
-						cipher.o
-obj-$(CONFIG_MYCRYPTO) += crypto-hw-mycrypto.o
+crypto-hw-testcrypto-objs := testcrypto.o 
+obj-$(CONFIG_TESTCRYPTO) += crypto-hw-testcrypto.o
