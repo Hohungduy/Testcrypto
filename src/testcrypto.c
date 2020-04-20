@@ -1,3 +1,13 @@
+/*
+ * Support for Cryptographic Engine in FPGA card using PCIe interface
+ * that can be found on the following platform: Armada. 
+ *
+ * Author: Duy H.Ho <duyhungho.work@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation.
+ */
 #include <asm/uaccess.h>
 #include <asm/smp.h>
 #include <crypto/skcipher.h>
@@ -44,27 +54,28 @@ struct skcipher_def {
 static void test_skcipher_cb(struct crypto_async_request *req, int error)
 {
     struct tcrypt_result *result = req->data;
-
+    printk(KERN_INFO "Module testcrypto: STARTING test_skcipher_cb\n");
     if (error == -EINPROGRESS)
         return;
     result->err = error;
     complete(&result->completion);
-    pr_info("Encryption finished successfully\n");
+    printk(KERN_INFO "Module testcrypto:Encryption finished successfully\n");
 }
 /* Perform cipher operation */
 static unsigned int test_skcipher_encdec(struct skcipher_def *sk,
                      int enc)
 {
     int rc;
-
+    printk(KERN_INFO "Module testcrypto: STARTING test_skcipher_encdec\n");
     if (enc)
         rc = crypto_wait_req(crypto_skcipher_encrypt(sk->req), &sk->wait);
     else
         rc = crypto_wait_req(crypto_skcipher_decrypt(sk->req), &sk->wait);
 
     if (rc)
-            pr_info("skcipher encrypt returned with result %d\n", rc);
+            printk(KERN_INFO "skcipher encrypt returned with result %d\n", rc);
 
+    printk(KERN_INFO "Module testcrypto: skcipher encrypt returned with result %d\n", rc);
     return rc;
 }
 
@@ -85,6 +96,7 @@ static int test_skcipher(void)
     * encryption/decryption operations.  But in this example, we'll just do a
     * single encryption operation with it (which is not very efficient).
      */
+    printk(KERN_INFO "Module testcrypto: starting test_skcipher1\n");
     skcipher = crypto_alloc_skcipher("cbc(aes)", 0, 0);
     if (IS_ERR(skcipher)) {
         pr_info("could not allocate skcipher handle\n");
@@ -99,7 +111,7 @@ static int test_skcipher(void)
     }
 
     skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
-                      crypto_req_done,
+                      test_skcipher_cb,
                       &sk.wait);
 
     /* AES 128 with random key */
@@ -145,12 +157,13 @@ static int test_skcipher(void)
 
     /* encrypt data */
     ret = test_skcipher_encdec(&sk, 1);
-    if (ret)
+    //printk(KERN_INFO "starting test_skcipher2(ret): %d\n", ret);
+    if (ret){
         pr_err("Error encrypting data: %d\n", ret);
         goto out;
-
-    pr_info("Encryption triggered successfully\n");
-
+    }
+    // pr_info("Encryption triggered successfully\n");
+    printk(KERN_INFO "Encryption triggered successfully\n");
 out:
     if (skcipher)
         crypto_free_skcipher(skcipher);
@@ -166,14 +179,14 @@ out:
 
 static int __init test_init(void)
 {
-    printk(KERN_INFO "info: init test\n");
+    printk(KERN_INFO "Module testcrypto: info: init test\n");
     test_skcipher();
     return 0;
 }
 
 static void __exit test_exit(void)
 {
-    printk(KERN_INFO "info: exit test\n");
+    printk(KERN_INFO "Module testcrypto: info: exit test\n");
 }
 
 module_init(test_init);
